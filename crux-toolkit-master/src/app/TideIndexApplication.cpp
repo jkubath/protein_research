@@ -73,8 +73,8 @@ int TideIndexApplication::main(
         }
         MASS_TYPE_T mass_type = (monoisotopic_precursor) ? MONO : AVERAGE;
         int missed_cleavages = Params::GetInt("missed-cleavages");
-        DIGEST_T digestion = get_digest_type_parameter("digestion");
-        ENZYME_T enzyme_t = get_enzyme_type_parameter("enzyme");
+        DIGEST_T digestion = get_digest_type_parameter("digestion"); // allowable digestions src/util/crux-utils.cpp line 171
+        ENZYME_T enzyme_t = get_enzyme_type_parameter("enzyme"); // enzyme used to digest the protein, allowable enzymes src/util/crux-utils.cpp line 223
         const char* enzymePtr = enzyme_type_to_string(enzyme_t);
         string enzyme(enzymePtr);
         if ((enzyme != "no-enzyme") &&
@@ -91,6 +91,7 @@ int TideIndexApplication::main(
                 carp(CARP_FATAL, "Error parsing mods");
         }
         //parse terminal modifications
+        // Changing the molecule attached to the N and C terminals
         mods_spec = Params::GetString("cterm-peptide-mods-spec");
         if (!mods_spec.empty() && !var_mod_table.Parse(mods_spec.c_str(), CTPEP)) {
                 carp(CARP_FATAL, "Error parsing c-terminal peptide mods");
@@ -108,7 +109,7 @@ int TideIndexApplication::main(
                 carp(CARP_FATAL, "Error parsing n-terminal protein mods");
         }
 
-        var_mod_table.SerializeUniqueDeltas();
+        var_mod_table.SerializeUniqueDeltas(); // Remove duplicates from the various modification tables; src/app/tide/modifcations.h line 271
 
         if (!MassConstants::Init(var_mod_table.ParsedModTable(),
                                  var_mod_table.ParsedNtpepModTable(),
@@ -167,8 +168,9 @@ int TideIndexApplication::main(
         carp(CARP_INFO, "Reading %s and computing unmodified peptides...",
              fasta.c_str());
         pb::Header proteinPbHeader;
-        vector<TideIndexPeptide> peptideHeap;
+        vector<TideIndexPeptide> peptideHeap; //contains mass, length, proteinId, proteinPos, residues, decoyIdx; TideIndexApplication.h line 82
         vector<string*> proteinSequences;
+
         fastaToPb(cmd_line, enzyme_t, digestion, missed_cleavages, min_mass, max_mass,
                   min_length, max_length, allowDups, mass_type, decoy_type, fasta, out_proteins,
                   proteinPbHeader, peptideHeap, proteinSequences, out_decoy_fasta);
@@ -451,7 +453,7 @@ void TideIndexApplication::fastaToPb(
         MASS_TYPE_T massType,
         DECOY_TYPE_T decoyType,
         const string& fasta,
-        const string& proteinPbFile,
+        const string& proteinPbFile, // binary index filename from the command line
         pb::Header& outProteinPbHeader,
         vector<TideIndexPeptide>& outPeptideHeap,
         vector<string*>& outProteinSequences,
@@ -477,7 +479,7 @@ void TideIndexApplication::fastaToPb(
         string proteinName;
         string* proteinSequence = new string;
         int curProtein = -1;
-        vector< pair< ProteinInfo, vector<PeptideInfo> > > cleavedPeptideInfo;
+        vector< pair< ProteinInfo, vector<PeptideInfo> > > cleavedPeptideInfo; // holds the proteinName and a vector containing all possible peptides
         set<string> setTargets, setDecoys;
         map<const string*, TargetInfo> targetInfo;
 
@@ -490,13 +492,16 @@ void TideIndexApplication::fastaToPb(
                 const ProteinInfo& proteinInfo = cleavedPeptideInfo.back().first;
                 vector<PeptideInfo>& cleavedPeptides = cleavedPeptideInfo.back().second; // Doesn't need to be set
                 // Write pb::Protein
+                //proteinWriter is the filename
+                //curProtein is the ID
+                //proteinName is the name
                 writePbProtein(proteinWriter, ++curProtein, proteinName, *proteinSequence);
                 cleavedPeptides = GeneratePeptides::cleaveProtein(
                         *proteinSequence, enzyme, digestion, missedCleavages, minLength, maxLength);
                 // Iterate over all generated peptides for this protein
                 for (vector<PeptideInfo>::iterator i = cleavedPeptides.begin();
                      i != cleavedPeptides.end(); ) {
-                        FLOAT_T pepMass = calcPepMassTide(i->Sequence(), massType);
+                        FLOAT_T pepMass = calcPepMassTide(i->Sequence(), massType); //add all the amino acids
                         if (pepMass < 0.0) {
                                 // Sequence contained some invalid character
                                 carp(CARP_DEBUG, "Ignoring invalid sequence <%s>", i->Sequence().c_str());
@@ -509,9 +514,12 @@ void TideIndexApplication::fastaToPb(
                                 continue;
                         }
                         // Add target to heap
+                        // mass, number of peptides, proteinSequence, curProtein integer ID, vector Position of the current peptide for the current protein sequence
                         TideIndexPeptide pepTarget(pepMass, i->Length(), proteinSequence, curProtein, i->Position());
                         outPeptideHeap.push_back(pepTarget);
                         push_heap(outPeptideHeap.begin(), outPeptideHeap.end(), greater<TideIndexPeptide>());
+
+                        /* Checking for duplicates after every preptide for every protein sequence !!!!! */
                         if (!allowDups && decoyType != NO_DECOYS) {
                                 const string* setTarget = &*(setTargets.insert(i->Sequence()).first);
                                 targetInfo.insert(make_pair(setTarget, TargetInfo(proteinInfo, i->Position(), pepMass)));

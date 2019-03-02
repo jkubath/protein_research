@@ -274,7 +274,7 @@ public:
                 original_deltas_.resize(unique_delta_.size());
                 copy(unique_delta_.begin(), unique_delta_.end(), original_deltas_.begin());
                 sort(unique_delta_.begin(), unique_delta_.end());
-                unique_delta_.resize(unique(unique_delta_.begin(), unique_delta_.end()) - unique_delta_.begin());
+                unique_delta_.resize(unique(unique_delta_.begin(), unique_delta_.end()) - unique_delta_.begin()); // Remove duplicate deltas
                 coder_.Init(unique_delta_.size());
 
                 //The following these need to be in exactly the same order as parsed in the TideIndexApplication.cpp
