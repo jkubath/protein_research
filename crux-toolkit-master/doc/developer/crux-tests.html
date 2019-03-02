@@ -1,0 +1,199 @@
+<html>
+<title>Crux tests</title>
+<body>
+
+<h1>Crux tests</h1>
+
+<p>
+A collection of four types of tests resides under src/c/test, each in
+their own appropriately named subdirectory.  The makefile offers
+targets for compiling or running various tests.</p>
+
+<h3>Smoke tests</h3>
+
+<p>
+These tests should be run before any update is committed to SVN.  Note
+that you do have to run them on a 64-bit machine using 64-bit versions
+of crux. You also need to run the tests with a version of crux
+compiled in release mode (<code>cmake -DCMAKE_BUILD_TYPE=Release
+.</code>).  This is because the existing test result files were built
+on a 64-bit machine in release mode.</p> 
+
+<p>
+To run the tests, <a href="https://cukes.info/">Cucumber</a> must be
+installed. GSIT has made it available as a module, so running "module
+load cucumber/latest" will work. Instructions for installing Cucumber
+on Mac OS can be
+found <a href="http://watirmelon.com/2010/12/09/how-to-set-up-cucumber-and-watir-on-osx/">here</a>.
+Once Cucumber is available, the tests are run by executing the command
+"cucumber features/&lt;feature file&gt;" from the <code>
+test/smoke-tests</code> directory. This will run the set of tests in
+the specified feature file. If no feature file is specified (i.e. just
+running the command "cucumber"), all feature files in
+the <code>features</code> directory are used.
+</p>
+
+<p>
+Test output for a scenario will show up in green if it passes. If the scenario
+fails to pass, the step that failed will show up in red and an error will be
+printed.
+</p>
+
+<p>
+The actual tests, located in the <code>test/smoke-tests/features</code>
+directory, are in feature files organized by application. For example, the
+<code>tide-search.feature</code> file contains tests for tide-search. Each
+feature file contains a set of scenarios in which parameters are specified and
+then the application's output is compared to a known good result (located in the
+<code>good_results</code> directory). If the output does not match, it is
+written to a file called <code>&lt;expected results&gt;.observed</code>.
+</p>
+
+<p>
+To update all test results, run the <code>update-cucumber-tests.sh</code> script
+from the smoke-tests directory.
+</p>
+
+<p>
+Scenarios are written in plain English, which are parsed using regular
+expressions into testing instructions according to the definitions in <code>
+features/step_definitions/SmokeTestStepDefinitions.rb</code>. While the step
+definition file parses the scenarios, most of the actual testing code is in
+<code>features/support/CruxTester.rb</code>. Both of these files are written in
+Ruby.
+</p>
+
+<p>
+  To add a new test to an existing command, do the following:</p>
+<ol>
+  <li>
+    Find in the
+    directory <code>test/smoke-tests/features/</code>
+    the <code>*.feature</code> file that corresponds to your
+    command.</li>
+    <li>
+    In the "Examples:" portion at the end of the file, add a new
+    line to define your test.  The meanings of the various fields
+    (delimited by "|") are listed immediately below the "Examples:"
+    line.</li>
+  <li>
+    If necessary, copy your input files into
+    the <code>smoke-tests</code> directory.  In many cases, you can
+    re-use existing input files from other tests.</li>
+  <li>
+    Create a new parameter file in the <code>params</code> directory
+    that includes the parameters for your test.</li>
+  <li>
+    Run the command corresponding to your test and check that the
+    results make sense.</li>
+  <li>
+    Decide which output file you want the test to look at. Write the
+    name of that file in the "actual_output" field. Make a copy
+    of the file, with a name of your choice, in the "good_results"
+    directory, and then write that name in the "expected_output"
+    field.</li>
+  <li>
+    Run cucumber to ensure that your new test passes.</li>
+</ol>
+
+
+<p>
+More information on Cucumber and its documentation are available on its website
+<a href="https://cukes.info/"> here</a>.
+</p>
+
+<h3>
+Unit Tests</h3>
+
+<p>
+Unit tests for individual components of <code>crux</code> are
+in <code>crux/src/c/test/unit-tests</code>
+and <code>crux/src/c/test/cppunit-tests</code>.  We are in the process
+of a transition from C to C++ so new unit tests should be added to the
+cppunit-tests directory.  A good time to add new unit tests is when a
+new class is created or new method is added to an existing class.  
+These tests must be compiled any time there are changes made to the
+code.  Run <code>make check-unit-tests</code> and 
+<code>make check-cpp-unit-tests</code> from the test directory or
+run <code>make</code> from each sub-directory.  As the tests run,
+the results will be printed to stdout.</p>
+
+<p>
+Tests are arranged by source file with
+<code>check-&lt;filename&gt;.c</code> or 
+<code>Test&lt;Filename&gt;.cpp</code> containing tests for 
+methods in <code>crux/src/c/&lt;filename&gt;.cpp</code>.  The main
+drivers are <code>crux-unit-tests.c</code> and <code>main.cpp</code>.
+</p>
+
+<p>
+Information about the <code>check</code> package
+is <a href="http://check.sourceforge.net/">here</a> and a very basic
+tutorial starts
+<a href="http://check.sourceforge.net/doc/check.html/check_5.html#SEC5">here</a>.  
+Information about the <code>cppunit</code> package is <a 
+href="http://sourceforge.net/apps/mediawiki/cppunit/index.php?title=Main_Page">
+here</a> and from that main page are links to the <a href=
+"http://cppunit.sourceforge.net/doc/lastest/index.html">documentation</a>
+that includes a nice step-by-step tutorial.
+</p>
+
+<p>
+The unit testing is not complete.  Chris set up many tests as he was
+starting out, but eventually abandoned them.  By the time Barbara
+encountered the code, very few of the tests still worked.  Those she
+could fix quickly were kept and the rest were commented out
+of <code>crux-unit-tests.c</code>.  A number of new tests were added
+as the dynamic modifications were being implemented.  As structs are
+converted to classes, more tests are being added to cppunit-tests.</p>
+
+<p>
+To see the basic structure of the <code>check-</code> files look
+at <code>check-template.c</code>.  There are a series of short tests,
+each with a name.  Before each test, a setup routine is run to create
+data structures.  A teardown routine is run after each test to clean up
+any memory allocated in the setup.  Tests can be performed on those
+objects created in setup or on locally created values.  The basic form
+of the test is to call a method and check the value it returned
+with <code>fail_unless(condition, message)</code>.  As soon as one of
+these statements fails, the message is printed, the test ends, the
+teardown routine is called, and the next test is started.  
+</p>
+
+<p>
+To add a new test to an existing file, insert a new <code>
+START_TEST(name){}END_TEST</code> block into the file and add the test to the
+test suite using <code>tcase_add_test()</code>.  To create a new test
+suite, make a copy of <code>check-template.c</code> and fill in the
+body of the tests, changing &lt;&lt;class&gt;&gt; to the name of
+crux/src/c/ file. Make a copy of <code>check-template.h</code> and
+change the names accordingly.  Look for &lt;&lt;class&gt;&gt;
+in <code>crux-unit-tests.c</code> and add a line of that form with the
+correct name.  Finally, add the name of the file to <code>Makefile</code>. 
+</p>
+
+<p>
+The basic structure of the cppunit tests is very similar and the 
+<code>TestTemplate.cpp</code> file can be used as a starting point for
+additional tests.</p>
+
+<h3>Performance tests</h3>
+
+<p>
+These tests measure, for a given data set, how well the various Crux
+search tools work.  The measurement uses decoy PSMs as an empirical
+null distribution.  A full description is
+available <a href="../../test/performance-tests/performance.html">here</a>.</p>
+
+<h3>Calibration tests</h3>
+
+<p>
+These tests measure, for a given data set, the extent to which the
+p-value produced by <code>crux search-for-matches</code> are uniformly
+distributed when the input database is shuffled.  A full description
+is
+available <a href="../../test/calibration/calibration.html">here</a>.</p>
+
+</body>
+</html>
+

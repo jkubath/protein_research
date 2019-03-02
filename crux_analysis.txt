@@ -1,0 +1,35 @@
+Crux analysis
+
+Download the latest code from github.com
+
+
+Main app: crux-toolkit-master/crux-main.cpp
+  line 69 calls TideIndexApplication()
+
+TideIndexApplication: crux-toolkit-master/TideIndexApplication::main starts at line 44
+  var_mod_table is created at line 85: src/app/tide/modifications.h
+    modifications.h
+      constructor
+        calls sort() at line 99
+          n * log(n), but is called in a for loop 256 times
+  TideIndex starts at line 166
+  fastaToPb is called at line 172
+    uses ifstream to read the .fasta file
+      for loop is used to iterate character by character to find the protein id
+      protein sequence is added line by line until the next '>' is found
+      line 494 GeneratePeptides::cleavedPeptides pushes all possible peptides to a vector
+        crux-toolkit-master/GeneratePeptides.cpp line 308
+          two for loops is n^2 for each protein sequence
+      for-loop iterates over all the peptides
+          calls calcPepMassTide(): crux-toolkit-master/TideIndexApplication line 760
+            adds h2_O mass and for loop to iterate each amino acid
+          add the peptide target to outPeptideHeap in log time: TideIndexApplication line 514
+    For-loop iterates over the set of peptide sequences: TideIndexApplication line 537 or line 584
+      generateDecoys: TideIndexApplication line 938
+        if decoys have already been generated for this sequence
+          add them to the decoySequences vector
+        else
+          if decoys aren't allowed, it adds the decoys to a set first, then copies
+          all the data to the decoy vector
+            TideIndexApplication line 1000
+        add all the decoys to the outPeptideHeap

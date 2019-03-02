@@ -1,0 +1,214 @@
+<html>
+ <title>Notes on releasing new versions of Crux</title>
+<body>
+ <h2 align=center>Notes on releasing new versions of Crux</h2>
+
+<p><i>Note: A detailed <a href=#todo>checklist</a> is at the bottom of
+    this page</i>
+
+<h3>Introduction</h3>
+After every successful commit to the Crux GitHub repository
+our TeamCity server automatically publishes the current source distribution
+and binaries for all platforms to the Crux web site.
+As functionality milestones are achieved
+we also publish stable, versioned releases.
+This document describes how to publish a versioned release.
+
+<h3>Before you begin</h3>
+<p>Consider updating the UNIMOD data: download the latest data in XML format from
+  <code>http://www.unimode.org/xml/unimod.xml</code>. Then, run <code>bin/unimod_parser.py
+  /path/to/xml/file &gt; src/model/Unimod.h.</code>
+
+<p>Confirm that the TeamCity server successfully built Crux from the current
+  repository trunk on all platforms, and that the smoke and performance tests all 
+  passed on the 64-bit Linux build.
+  Update the release notes
+  (<code>doc/user/release-notes.html</code>), and update the PHP script to point at the
+  new packages (<code>doc/user/download/download.php</code>).
+
+<h3>Version numbers</h3>
+<p>Each time new files are made available for download, the version
+number should increment by 0.01 for minor releases or by 0.1 for major
+releases. The version number is maintained in CMakeLists.txt in the
+root Crux directory in the lines
+<pre>
+set (CPACK_PACKAGE_VERSION_MAJOR "X")
+set (CPACK_PACKAGE_VERSION_MINOR "XX")
+</pre>
+This controls the numbering of packages and what is reported by the 
+<code>--version</code> option.
+</p>
+<p>Update <code>doc/user/download/download.php</code> to point at the new
+versions of the distribution packages.</p>
+<p>Commit these changes to the trunk.</p>
+
+<h3>Create a branch for the release</h3>
+<p>
+Because each numbered release of Crux will require some changes to the source,
+a branch should be created for each release.
+Bugs in the release are fixed in this branch and then
+merged into the default branch.
+<p/>
+For example:
+<pre>
+# Get latest code from remote origin
+git pull
+# Create branch for bug fixes to release
+git checkout -b crux-3.2
+</pre>
+<h3>Prepare a static tarball of Proteowizard</h3>
+The normal build of Crux pulls the latest version of Proteowizard 
+from it's TeamCity repository.
+This is a moving target, and may result in bugs or build breaks
+as the Proteowizard team makes changes. 
+For numbered releases we download the current version of Proteowizard
+and save it into as a static tarball on our web site.
+When users build the release from source, this tarball is downloaded,
+and used to build the Proteowizard libraries.
+<p/>
+The script <code>ext/download-pwiz-tarball.sh</code>
+can be used to download a copy of the Proteowizard source tarball
+into the current directory.
+It can then be copied into the download directory for the new release on the
+<code>crux-toolkit</code> download web site, which is on
+<code>noble-web</code> on the GS network.
+The Crux download directory is under the Noble Lab website,
+in <code>/noble/www/htdocs/crux-downloads</code>.
+<h3>Modify the Crux build to use the new Proteowizard tarball.</h3>
+This is done by editing <code>ext\CMakeLists.txt.</code>
+Look for blocks of code  in the clauses depending
+on <code>USE_LATEST_PWIZ</code>.
+There will be two such blocks, one for Windows, and one for non-Windows.
+Change these blocks to use only the Proteowizard tarball on the Crux web site.
+Note that this edit should <b>not</b> be merged back into the trunk.
+<h3>Modify the Crux build to use a fixed version of Percolator</h3>
+In <code>ext/CMakeLists.txt</code> set the CMake varible <code>PERCOLATOR_GIT_VERSION</code>
+to the tag for the current release of Percolator.
+For example:
+<pre>
+SET(PERCOLATOR_GIT_VERSION "rel-3-02")
+</pre>
+<h3>Add TeamCity build tasks for the new version</h3>
+You'll need to create TeamCity tasks for building the new version of
+Crux on each of the platforms,
+and for deploying the results to the web site.
+The easiest way to do this is to copy the tasks for the previous named release
+and then modify them with the new version and directory information.
+<p />
+For the platform build tasks, the settings that need to be changed include:
+<ul>
+<li>
+General Settings
+<ul>
+<li>
+Name
+</li>
+<li>
+Build configuration ID
+</li>
+<li>
+Artifact Paths
+</li>
+</ul>
+<li>Version Control Settings</li>
+</li>
+<ul>
+<li>
+Edit Name
+<ul>
+<li>VCS root name</li>
+<li>VCS root ID</li>
+<li>URL</li>
+</ul>
+</li>
+</ul>
+<li>Build Steps</li>
+<ul>
+<li>
+Update the name of the packages generated in the build.
+For example, change <code>crux-3.1.Darwin.x86_64.zip</code>
+to <code>crux-3.2.Darwin.x86_64.zip</code></li>
+</ul>
+</ul>
+<p />
+For the web site deployment task, the settings that need to be changed include:
+<ul>
+<li>General Settings</li>
+<ul>
+<li>Build configuration ID</li>
+<li>Build counter</li>
+</ul>
+<li>
+Build Step: SSH Deployer
+<ul>
+<li>
+Edit Deploy Artifacts build step
+<ul>
+<li>
+Target path under Deployment Targets.
+</li>
+<li>Artifacts path under Deployment Source</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+Dependencies
+<ul>
+<li>Modify the dependencies to point at the tasks for the builds of the new
+version for each platform.</li>
+<li>Update the artifact dependencies with the new names of the artifacts (zip files and tarballs)</li>
+</ul>
+</li>
+</ul>
+Before running the TeamCity tasks,
+<a href="crux-sourceforge.html" >log on</a> to the <code>crux-toolkit</code> server.
+Create a subdirectory for the new release in 
+<code>/home/project-web/cruxtoolkit/htdocs/download</code>
+<h3>Build the releases and update the web site</h3>
+Once the previous steps have been completed run the TeamCity task to
+deploy the new version to the web site. This will also run the
+tasks to build the new release for each platform.
+<h3>Verify the deployment to the web site</h3>
+You should verify that the web site content has been correctly updated.
+You should also download and test the distribution for each platform.
+<a name="todo">
+<h3>Checklist</h3></a>
+<p>Here is a list of steps to follow, roughly in this order</p>
+<ol>
+<h4>Preliminaries</h4>
+<li>Change version number in <code>CMakeLists.txt</code> in the project root.
+<li>Review the <code>git</code> commit log since the last release and update
+the release notes accordingly.</li>
+<li>Update <code>doc/user/download/download.php</code> to point at the new
+versions of the distribution packages.</li>
+<li>Check that the current trunk builds correctly for all platforms.</li>
+<li>Check that the smoke test for the current trunk run correctly for 64-bit Linux</li>
+<li>Commit changes to the trunk.</li>
+<h4>Create new version branch and Proteowizard tarball</h4>
+<li>Create a branch in the GitHub repository for the new version</li>
+<li>Check out a clean copy of the branch for the version.</li>
+<li>Create a tarball of the current version of Proteowizard and store a copy 
+in the download directory of the Crux web site.</li>
+<li>Update the <code>ext/CMakeLists.txt</code> script to point at the
+Proteowizard tarball you just created.</li>
+<li>Update the <code>ext/CMakeLists.txt</code> script with the
+<code>PERCOLATOR_GIT_TAG</code> for the current release of Percolator.</li>
+<li>Commit changes to the branch.
+<h4>Update TeamCity build tasks</h4>
+<li>Copy TeamCity tasks for previous release to tasks for new release.</li>
+<li>Update details of tasks for new release.</li>
+<li>Run all of the build tasks for the new release</li>
+<li>Check results of TeamCity builds and smoke tests.
+<h4>Deploy new release to web site</h4>
+<li>Run TeamCity task <code>Deploy successful build to website</code>.
+<h4>Check the distribution files</h4>
+<li>Download, unpack, and build Crux from the source file tarball from the web site.
+<li>Download, unpack and run the binary files from the web site.  <i>You may want to ask someone
+    else to do these steps on different computers.</i>
+<li>Test that the links all work (use the <a
+href="https://validator.w3.org/checklink">W3 Link Validator</a>).
+<li>Send a message to the crux users list announcing the new release.
+</ol>
+</body>
+</html>
