@@ -8,6 +8,7 @@ Main app: crux-toolkit-master/crux-main.cpp
 
 TideIndexApplication: crux-toolkit-master/TideIndexApplication::main starts at line 44
   var_mod_table is created at line 85: src/app/tide/modifications.h
+      holds all the modifications to the variables like [O+25]
     modifications.h
       constructor
         calls sort() at line 99
@@ -29,7 +30,29 @@ TideIndexApplication: crux-toolkit-master/TideIndexApplication::main starts at l
         if decoys have already been generated for this sequence
           add them to the decoySequences vector
         else
-          if decoys aren't allowed, it adds the decoys to a set first, then copies
+          if duplicates aren't allowed, it adds the decoys to a set first, then copies
           all the data to the decoy vector
             TideIndexApplication line 1000
         add all the decoys to the outPeptideHeap
+  output the proteins to a file
+    while loop for all the proteins in the protein heap
+      if there are duplicates for the current peptide
+        add all the locations to a pbAuxLoc vector
+
+      write the duplicate locations
+      write the peptide information
+        id, mass, length, protein id first location, position
+
+TideSearchApplication: src/app/TideSearchApplication.cpp
+  read all the proteins from the index (database)
+
+  use multi threading for the preptide search: TideSearchApplication.cpp line 1105
+    array of mutex will lock the data to make it atomic
+
+    array of thread_data objects are held
+      src/app/TideSearchApplication.h line 257
+
+      multiple copies of the same data
+
+      search is called TideSearchApplication line 469
+        all the parameters are copied to local variables

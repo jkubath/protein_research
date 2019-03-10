@@ -233,7 +233,9 @@ int TideIndexApplication::main(
 
         string basic_peptides = need_mods ? modless_peptides : peakless_peptides;
 
+
         writePeptidesAndAuxLocs(peptideHeap, basic_peptides, out_aux, header_no_mods);
+
         // Do some clean up
         for (vector<string*>::iterator i = proteinSequences.begin();
              i != proteinSequences.end();
@@ -719,6 +721,7 @@ void TideIndexApplication::writePeptidesAndAuxLocs(
         int numDecoys = 0;
         int numDuplicateTargets = 0;
         int numDuplicateDecoys = 0;
+        // O(2 n log(n) )
         sort_heap(peptideHeap.begin(), peptideHeap.end(),
                   greater<TideIndexPeptide>());
         while (!peptideHeap.empty()) {
@@ -731,13 +734,20 @@ void TideIndexApplication::writePeptidesAndAuxLocs(
                         } else {
                                 numDuplicateTargets++;
                         }
+
+                        /* Adds location data to the protein duplicate array
+                         * Each peptide can have multiple occurances
+                         */
                         carp(CARP_DEBUG, "Skipping duplicate %s.", curPeptide.getSequence().c_str());
                         pb::Location* location = pbAuxLoc.add_location();
                         location->set_protein_id(peptideHeap.back().getProteinId());
                         location->set_pos(peptideHeap.back().getProteinPos());
                         peptideHeap.pop_back();
                 }
+
+                // Builds the pbPeptide protein object
                 getPbPeptide(count, curPeptide, pbPeptide);
+
                 // Not all peptides have aux locations associated with them. Check to see
                 // if GetGroup added any locations to aux_location. If yes, only then
                 // assign the corresponding array index to the peptide and write it out.
