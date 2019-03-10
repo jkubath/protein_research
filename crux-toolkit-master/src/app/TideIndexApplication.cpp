@@ -481,7 +481,7 @@ void TideIndexApplication::fastaToPb(
         string proteinName;
         string* proteinSequence = new string;
         int curProtein = -1;
-        vector< pair< ProteinInfo, vector<PeptideInfo> > > cleavedPeptideInfo; // holds the proteinName and a vector containing all possible peptides
+        vector< pair< ProteinInfo, vector<PeptideInfo> > > cleavedPeptideInfo; // holds the ProteinInfo object and a vector containing all possible peptides as ProteinInfo objects
         set<string> setTargets, setDecoys;
         map<const string*, TargetInfo> targetInfo;
 
@@ -516,7 +516,7 @@ void TideIndexApplication::fastaToPb(
                                 continue;
                         }
                         // Add target to heap
-                        // mass, number of peptides, proteinSequence, curProtein integer ID, vector Position of the current peptide for the current protein sequence
+                        // mass, peptide length, proteinSequence, curProtein integer ID, vector Position of the current peptide for the current protein sequence
                         TideIndexPeptide pepTarget(pepMass, i->Length(), proteinSequence, curProtein, i->Position());
                         outPeptideHeap.push_back(pepTarget);
                         push_heap(outPeptideHeap.begin(), outPeptideHeap.end(), greater<TideIndexPeptide>());
@@ -580,7 +580,7 @@ void TideIndexApplication::fastaToPb(
                                 outProteinSequences.push_back(decoySequence);
 
                                 // Write pb::Protein
-                                writeDecoyPbProtein(++curProtein, ProteinInfo(i->first.name, &decoyProtein),
+                                writeDecoyPbProtein(++curProtein, ProteinInfo(i->first.name, &decoyProtein), // proteinName, proteinSequence
                                                     *decoySequence, j->Position(), proteinWriter);
                                 // Add decoy to heap
                                 TideIndexPeptide pepDecoy(pepMass, j->Length(), decoySequence,

@@ -14,13 +14,14 @@ TideIndexApplication: crux-toolkit-master/TideIndexApplication::main starts at l
         calls sort() at line 99
           n * log(n), but is called in a for loop 256 times
   TideIndex starts at line 166
-  fastaToPb is called at line 172
+  fastaToPb is called at line 172 heap sorted by mass then peptide lengths
     uses ifstream to read the .fasta file
       for loop is used to iterate character by character to find the protein id
       protein sequence is added line by line until the next '>' is found
+      write the protein data to file
       line 494 GeneratePeptides::cleavedPeptides pushes all possible peptides to a vector
         crux-toolkit-master/GeneratePeptides.cpp line 308
-          two for loops is n^2 for each protein sequence
+          two for-loops is n^2 for each protein sequence
       for-loop iterates over all the peptides
           calls calcPepMassTide(): crux-toolkit-master/TideIndexApplication line 760
             adds h2_O mass and for loop to iterate each amino acid
