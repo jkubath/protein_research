@@ -41,19 +41,42 @@ TideIndexApplication: crux-toolkit-master/TideIndexApplication::main starts at l
         add all the locations to a pbAuxLoc vector
 
       write the duplicate locations
+        app/tide/protobuf/peptides.proto
+        list of auxiliary locations
+          protein id (index in the heap), start protein position
       write the peptide information
         id, mass, length, protein id first location, position
 
 TideSearchApplication: src/app/TideSearchApplication.cpp
   read all the proteins from the index (database)
 
-  use multi threading for the preptide search: TideSearchApplication.cpp line 1105
+  use multi threading for the peptide search: TideSearchApplication.cpp line 1105
     array of mutex will lock the data to make it atomic
 
     array of thread_data objects are held
       src/app/TideSearchApplication.h line 257
 
-      multiple copies of the same data
+      lines 189 - 229 do the same thing other than one line in two if statements
 
-      search is called TideSearchApplication line 469
-        all the parameters are copied to local variables
+      multiple copies of the same data
+      spectra are loaded in line 318
+        sorted by MZ
+      search called on line 337
+        ObservedPeakSet.preprocess is used to normalize peptides app/tide/spectrum_preprocess.h
+          remove peptides outside of given ranges or set the max intensity of intensity
+        collectScoresCompiled - creates programs to evaluate the dot product for all peptides
+          results are saved in match_arr2 declared on line 605
+
+
+Improvements
+  eliminating objects made when functions are called
+  sorted heap is used when inserting peptide objects and called again before writing
+
+Read all the proteins from the database
+generate all the peptides for all the proteins
+  sorted by mass and length
+for all the observed proteins
+  find the database peptides that are within the same window as the current spectrum
+    saved in active_peptide_queue.queue_ (private variable)
+  calculate dot product for similarity comparisons
+  keep the top scores to later be given a confidence value

@@ -242,6 +242,7 @@ int TideIndexApplication::main(
              ++i) {
                 delete *i;
         }
+        //What is this for?
         vector<TideIndexPeptide>().swap(peptideHeap);
         ProteinVec proteins;
         if (!ReadRecordsToVector<pb::Protein>(&proteins, out_proteins)) {
@@ -746,6 +747,9 @@ void TideIndexApplication::writePeptidesAndAuxLocs(
                 }
 
                 // Builds the pbPeptide protein object
+                /*pbPeptide objects
+                  mass, length, protein id, protein starting location, decoyIndex
+                */
                 getPbPeptide(count, curPeptide, pbPeptide);
 
                 // Not all peptides have aux locations associated with them. Check to see

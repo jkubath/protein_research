@@ -59,10 +59,12 @@ void TideMatchSet::report(
   if (nHit < top_matches) {
       top_matches = nHit;
   }
+  // Sorted by lowest p value
   if (exact_pval_search_) {
     sort(peptide_->spectrum_matches_array.begin(),
          peptide_->spectrum_matches_array.end(),
          Peptide::spectrum_matches::compPV);
+  // Sorted by highest SC score
   } else {
     sort(peptide_->spectrum_matches_array.begin(),
          peptide_->spectrum_matches_array.end(),
