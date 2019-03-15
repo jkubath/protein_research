@@ -2,7 +2,6 @@ Crux analysis
 
 Download the latest code from github.com
 
-
 Main app: crux-toolkit-master/crux-main.cpp
   line 69 calls TideIndexApplication()
 
@@ -43,6 +42,14 @@ TideIndexApplication: crux-toolkit-master/TideIndexApplication::main starts at l
         add all the decoys to the outPeptideHeap with all other peptides
       write all the decoy proteins to the decoy fasta file
   output the proteins to a file
+
+  read all the proteins - ReadRecordsToVector
+    HeadedRecordReader
+      RecordReader
+        google::protobuf::io::CodedInputStream
+          google::protobuf::io::FileInputStream
+            filename and buffer size = -1 (appropriate value)
+
     while loop for all the proteins in the protein heap
       if there are duplicates for the current peptide
         add all the locations to a pbAuxLoc vector
