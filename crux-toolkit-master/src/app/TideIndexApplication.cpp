@@ -448,9 +448,9 @@ void TideIndexApplication::fastaToPb(
         const ENZYME_T enzyme,
         const DIGEST_T digestion,
         int missedCleavages,
-        FLOAT_T minMass,
+        FLOAT_T minMass, // min and max total mass of peptides
         FLOAT_T maxMass,
-        int minLength,
+        int minLength, // min and max length of peptides
         int maxLength,
         bool allowDups,
         MASS_TYPE_T massType,
@@ -492,19 +492,19 @@ void TideIndexApplication::fastaToPb(
                 outProteinSequences.push_back(proteinSequence);
                 cleavedPeptideInfo.push_back(make_pair(
                                                      ProteinInfo(proteinName, proteinSequence), vector<PeptideInfo>()));
-                const ProteinInfo& proteinInfo = cleavedPeptideInfo.back().first;
+                const ProteinInfo& proteinInfo = cleavedPeptideInfo.back().first; // ProteinInfo Object (name and sequence)
                 vector<PeptideInfo>& cleavedPeptides = cleavedPeptideInfo.back().second; // Doesn't need to be set
                 // Write pb::Protein
                 //proteinWriter is the filename
                 //curProtein is the ID
                 //proteinName is the name
-                writePbProtein(proteinWriter, ++curProtein, proteinName, *proteinSequence);
+                writePbProtein(proteinWriter, ++curProtein, proteinName, *proteinSequence); // protix file
                 cleavedPeptides = GeneratePeptides::cleaveProtein(
                         *proteinSequence, enzyme, digestion, missedCleavages, minLength, maxLength);
                 // Iterate over all generated peptides for this protein
                 for (vector<PeptideInfo>::iterator i = cleavedPeptides.begin();
                      i != cleavedPeptides.end(); ) {
-                        FLOAT_T pepMass = calcPepMassTide(i->Sequence(), massType); //add all the amino acids
+                        FLOAT_T pepMass = calcPepMassTide(i->Sequence(), massType); //add all the amino acids plus water molecule
                         if (pepMass < 0.0) {
                                 // Sequence contained some invalid character
                                 carp(CARP_DEBUG, "Ignoring invalid sequence <%s>", i->Sequence().c_str());
@@ -520,9 +520,12 @@ void TideIndexApplication::fastaToPb(
                         // mass, peptide length, proteinSequence, curProtein integer ID, vector Position of the current peptide for the current protein sequence
                         TideIndexPeptide pepTarget(pepMass, i->Length(), proteinSequence, curProtein, i->Position());
                         outPeptideHeap.push_back(pepTarget);
-                        push_heap(outPeptideHeap.begin(), outPeptideHeap.end(), greater<TideIndexPeptide>());
+                        push_heap(outPeptideHeap.begin(), outPeptideHeap.end(), greater<TideIndexPeptide>()); // sorting every peptide added
 
-                        /* Checking for duplicates after every preptide for every protein sequence !!!!! */
+                        /* Checking for duplicates after every preptide for every protein sequence !!!!!
+                         * If there are duplicate peptide sequences only the last would be saved
+                         * as the peptide sequence / TargetInfo pair
+                         */
                         if (!allowDups && decoyType != NO_DECOYS) {
                                 const string* setTarget = &*(setTargets.insert(i->Sequence()).first);
                                 targetInfo.insert(make_pair(setTarget, TargetInfo(proteinInfo, i->Position(), pepMass)));
@@ -530,7 +533,7 @@ void TideIndexApplication::fastaToPb(
                         ++targetsGenerated;
                         ++i;
                 }
-                proteinSequence = new string;
+                proteinSequence = new string; // making more objects without freeing old space
         }
         delete proteinSequence;
         if (targetsGenerated == 0) {
@@ -550,9 +553,10 @@ void TideIndexApplication::fastaToPb(
                         carp(CARP_INFO, "Writing reverse-protein fasta and decoys...");
                 }
                 for (vector< pair< ProteinInfo, vector<PeptideInfo> > >::const_iterator i =
-                             cleavedPeptideInfo.begin(); i != cleavedPeptideInfo.end(); ++i) {
-                        string decoyProtein = *(i->first.sequence);
+                             cleavedPeptideInfo.begin(); i != cleavedPeptideInfo.end(); ++i) { // has ProteinInfo object and vector of generated peptides
+                        string decoyProtein = *(i->first.sequence); // Protein sequence
                         reverse(decoyProtein.begin(), decoyProtein.end());
+                        // Write in fasta format
                         if (decoyFasta) {
                                 (*decoyFasta) << ">"<< decoyPrefix << i->first.name << endl
                                               << decoyProtein << endl;

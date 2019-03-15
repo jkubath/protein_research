@@ -18,7 +18,8 @@ TideIndexApplication: crux-toolkit-master/TideIndexApplication::main starts at l
     uses ifstream to read the .fasta file
       for loop is used to iterate character by character to find the protein id
       protein sequence is added line by line until the next '>' is found
-      write the protein data to file
+      write the protein data to proteinPbFile
+
       line 494 GeneratePeptides::cleavedPeptides pushes all possible peptides to a vector
         crux-toolkit-master/GeneratePeptides.cpp line 308
           two for-loops is n^2 for each protein sequence
@@ -26,6 +27,9 @@ TideIndexApplication: crux-toolkit-master/TideIndexApplication::main starts at l
           calls calcPepMassTide(): crux-toolkit-master/TideIndexApplication line 760
             adds h2_O mass and for loop to iterate each amino acid
           add the peptide target to outPeptideHeap in log time: TideIndexApplication line 514
+            sorted by mass and then peptide length
+          add to targetInfo map
+            peptide sequence -> TargetInfo object
     For-loop iterates over the set of peptide sequences: TideIndexApplication line 537 or line 584
       generateDecoys: TideIndexApplication line 938
         if decoys have already been generated for this sequence
@@ -34,18 +38,22 @@ TideIndexApplication: crux-toolkit-master/TideIndexApplication::main starts at l
           if duplicates aren't allowed, it adds the decoys to a set first, then copies
           all the data to the decoy vector
             TideIndexApplication line 1000
-        add all the decoys to the outPeptideHeap
+        add decoy protein to outProteinSequences
+        write decoy protein object and info to decoyPbProtein
+        add all the decoys to the outPeptideHeap with all other peptides
+      write all the decoy proteins to the decoy fasta file
   output the proteins to a file
     while loop for all the proteins in the protein heap
       if there are duplicates for the current peptide
         add all the locations to a pbAuxLoc vector
+          vector with the protein id and protein position that the duplicate peptides point to
 
       write the duplicate locations
         app/tide/protobuf/peptides.proto
         list of auxiliary locations
           protein id (index in the heap), start protein position
       write the peptide information
-        id, mass, length, protein id first location, position
+        id, mass, length, protein id first location, position, which aux location is for this peptide
 
 TideSearchApplication: src/app/TideSearchApplication.cpp
   read all the proteins from the index (database)
@@ -71,6 +79,9 @@ TideSearchApplication: src/app/TideSearchApplication.cpp
 Improvements
   eliminating objects made when functions are called
   sorted heap is used when inserting peptide objects and called again before writing
+  break peptides into smaller files
+    store the windows held in each file in a outline file
+    only open the smaller files needed not the entire peptide file
 
 Read all the proteins from the database
 generate all the peptides for all the proteins
@@ -80,3 +91,21 @@ for all the observed proteins
     saved in active_peptide_queue.queue_ (private variable)
   calculate dot product for similarity comparisons
   keep the top scores to later be given a confidence value
+
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.407.864&rep=rep1&type=pdf
+
+In this approach, the user must preprocess a given protein database to produce a binary
+protein database and a binary peptide index. The preprocessing step sorts all of the
+peptides in the database by mass and stores pointers to their locations in the protein database
+(sequence index, start position, and peptide length). Crux can then quickly retrieve a set of
+candidate peptides via a simple range query on the peptide index. Upon execution, Crux
+accesses the binary protein database and the peptide index as memory-mapped files. This
+approach offloads to the operating system the decision about how much of the database
+to store in memory, ensuring that small databases are read fully into memory but large
+databases are paged into and out of memory only as needed.
+  This flatness indicates that the running time for retrieving candidate
+  peptides is dominated by the fixed cost associated with scanning the file from disk.
+
+Peptides are in a binary file by mass
+these peptides are searched list of peptides inside the spectrum window are returned
+these peptides have position links back to the protein binary file
