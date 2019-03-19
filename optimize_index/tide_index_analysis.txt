@@ -1,0 +1,68 @@
+Analysis of the improved WMU TideIndexApplication.cpp
+
+1. set all local variables
+2. serialize unique deltas
+  these are changes in the mass to the amino acids
+3. Create output files
+  protix - proteins
+  pepix - peptides
+  auxlocs - auxiliary locations of peptides
+4. fastaToPb - Read the fasta database and save the protein sequences
+  Read the protein names and sequences and save to protein vector
+  Use OMP to multi-thread iterating over the proteins
+    generate all peptides for the given protein sequence
+      calculate the peptide mass
+      set the location of the peptide to the current size of the current thread vector
+      add the peptide to the thread peptide vector
+    iterate over the thread peptide vector
+      add the peptide sequence to generatedPeptidesSet[thread_number]
+
+    *** only no duplicate decoys is implemented ***
+    iterate over thread peptide vector
+      call wmuMakeDecoy
+      add the decoy to the generatedPeptidesSet[thread_number]
+  iterate over the protein vector
+    write the pb protein object
+  iterate over the protein vector
+    iterate over the protein locations vector
+      generate and write the decoyPbProtein
+  for all the threads
+    iterate over the peptide vector
+      create a TideIndexPeptide object
+      push to outPeptideHeap
+  for all the threads
+    iterate over the peptide vector
+      if peptide sequence is a decoy
+        create a TideIndexPeptide object
+        push to outPeptideHeap
+
+5. writePeptidesAndAuxLocs
+  read the proteins file
+  delete all the read proteins
+
+  sort the outPeptideHeap
+
+  iterate over all the peptides in the heap
+    if there are duplicate peptide sequences
+      create location objects and add to pbAuxLoc vector
+
+    if duplicates were found
+      write the pbAuxLoc vector
+    write the pb peptide object
+
+  Write the peptides and auxiliary objects to pepix and auxlocs
+6. Read the protix file into a protein vector
+7. Write target peptides to tide-index.peptides.target.txt
+  Read auxlocs file
+  Read the peakless_peptides file 1 peptide at a time
+    get the Modified peptide sequence
+
+    if sequence is a target
+      add the sequence to the target peptide set
+      write sequence \t mass to the out_target_list file
+    else
+      add the sequence and mass to decoy peptide vector
+
+  iterate over the decoy peptide vector
+    output the sequence \t mass (final mass if followed by '*')
+8. Add theoretical peaks to proteins, peakless_peptides, out_peptides

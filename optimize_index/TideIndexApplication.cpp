@@ -609,10 +609,10 @@ bool wmuMakeDecoy(const string& seq, ///< sequence to make decoy from
 				for (int i = 0; i < decoyOut.length(); i += 2) {
 						swap(decoyOut[i], decoyOut[i + 1]);
 				}
-            
+
                 int random1 = rand()%(decoyOut.length() - 0 + 1) + 0;
                 int random2 = rand()%(decoyOut.length() - 0 + 1) + 0;
-                
+
                 swap(decoyOut[random1], decoyOut[random2]);
 				decoyOut = decoyPre + decoyOut + decoyPost;
                 if (targetSeqs.find(decoyOut) == targetSeqs.end()
@@ -678,7 +678,7 @@ void TideIndexApplication::fastaToPb(
 		invalidPepCnt[i] = 0;
 		failedDecoyCnt[i] = 0;
 	}
-    
+
 	while (true) {
 		WMUProtien protien;
 		protien.protienNumber = protiensVector.size();
@@ -779,7 +779,7 @@ void TideIndexApplication::fastaToPb(
 			cleavedPeptides.clear();
 		}
 	}
-    
+
 #pragma omp parallel num_threads(THREAD_NUM)
 	{
 		int thread_number = omp_get_thread_num();
@@ -791,7 +791,7 @@ void TideIndexApplication::fastaToPb(
 
 		// generate decoys
 		if (decoyType == PROTEIN_REVERSE_DECOYS) {
-			// Please use the sequential code 
+			// Please use the sequential code
 		} else if (!allowDups) {
 
 			for (vector<WMUPeptide>::iterator it = peptidesVector[thread_number].begin(); it < peptidesVector[thread_number].end(); it++) {
@@ -805,7 +805,6 @@ void TideIndexApplication::fastaToPb(
 					bool makingDecoyResult = wmuMakeDecoy(it->peptideSequence, generatedPeptidesSet[thread_number], generatedDecoysSet[thread_number], decoyType == PEPTIDE_SHUFFLE_DECOYS, decoySequence);
 
 					if (makingDecoyResult) {
-
 						it->decoySequence = decoySequence;
 						generatedDecoysSet[thread_number].insert(decoySequence);
 						decoysGenerated[thread_number]++;
@@ -816,7 +815,7 @@ void TideIndexApplication::fastaToPb(
 				}
 			}
 		} else {
-			// Please use the sequential code 
+			// Please use the sequential code
 		}
 	}
 
@@ -853,7 +852,7 @@ void TideIndexApplication::fastaToPb(
 		}
 		//else if (thread_number == 1)
 		{
-			
+
 			for (int i = 0; i < THREAD_NUM; i++) {
 				for (vector<WMUPeptide>::iterator it = peptidesVector[i].begin(); it < peptidesVector[i].end(); it++) {
 					WMUProtien p = protiensVector[it->protienNumber];
@@ -873,7 +872,7 @@ void TideIndexApplication::fastaToPb(
 				for (vector<WMUPeptide>::iterator it = peptidesVector[i].begin(); it < peptidesVector[i].end(); it++) {
 					if (it->decoySequence.length() != 0) {
 						WMUProtien p = protiensVector[it->protienNumber];
-						
+
 						TideIndexPeptide pepDecoy(it->mass, it->decoySequence.length(), &(it->decoySequence), it->decoyProtienNumber, (it->location > 0) ? 1 : 0, true);
 						outPeptideHeap.push_back(pepDecoy);
 						push_heap(outPeptideHeap.begin(), outPeptideHeap.end(), greater<TideIndexPeptide>());
@@ -928,7 +927,7 @@ void TideIndexApplication::fastaToPb_OLD(const string& commandLine,
         unsigned int targetsGenerated = 0, decoysGenerated = 0;
         while (GeneratePeptides::getNextProtein(fastaStream, &proteinName,
                         proteinSequence)) {
-        	
+
                 outProteinSequences.push_back(proteinSequence);
                 cleavedPeptideInfo.push_back(
                                 make_pair(ProteinInfo(proteinName, proteinSequence),
@@ -946,7 +945,7 @@ void TideIndexApplication::fastaToPb_OLD(const string& commandLine,
 
 
                         FLOAT_T pepMass = calcPepMassTide(i->Sequence(), massType);
-                        
+
                         if (pepMass < 0.0) {
                                 // Sequence contained some invalid character
                                 carp(CARP_DEBUG, "Ignoring invalid sequence <%s>",
