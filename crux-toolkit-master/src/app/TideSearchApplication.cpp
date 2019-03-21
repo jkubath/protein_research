@@ -550,6 +550,7 @@ void TideSearchApplication::search(void* threadarg) {
                 }
                 locks_array[LOCK_REPORTING]->unlock();
 
+                // Get the current spectrum
                 Spectrum* spectrum = sc->spectrum;
                 double precursor_mz = spectrum->PrecursorMZ();
                 double precursorMass = sc->neutral_mass; //Added by Andy Lin (needed for residue evidence)
