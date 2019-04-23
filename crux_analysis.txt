@@ -116,3 +116,7 @@ databases are paged into and out of memory only as needed.
 Peptides are in a binary file by mass
 these peptides are searched list of peptides inside the spectrum window are returned
 these peptides have position links back to the protein binary file
+
+Neutral_mass / precursor mass - used to calculate the peptide window
+  Go TO /doc/PWIZ_README
+    /doc/user/example_files/default.params
